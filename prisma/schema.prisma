@@ -10,4 +10,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Declare schemas here
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  files    File[]
+}
+
+model File {
+  id          Int      @id @default(autoincrement())
+  filename    String
+  url         String
+  status      String   // "pending", "success", "failed"
+  uploadedAt  DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  dataFile    Json?
+  module      String?
+}

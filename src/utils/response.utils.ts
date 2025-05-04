@@ -73,6 +73,15 @@ export const response_forbidden = (
  * @param message description
  * @param errors list of errors
  */
+
+export const response_already_exist = (
+  res: Response,
+  message = "Already Exist",
+  errors: Array<string> = []
+) : Response => {
+  return response_handler(res, 403, undefined, message, errors);
+}
+
 export const response_not_found = (
   res: Response,
   message = "Not Found",
@@ -167,6 +176,8 @@ export const handleServiceErrorWithResponse = (
       return response_not_found(res, serviceResponse.err?.message);
     case 401:
       return response_unauthorized(res, serviceResponse.err?.message);
+    case 403:
+      return response_already_exist(res, serviceResponse.err?.message);
     default:
       return response_internal_server_error(res, serviceResponse.err?.message);
   }
