@@ -134,7 +134,7 @@ npm start -- --service=rest
   GET http://localhost:3010/file/get?module=HOTEL&rangedFilters=[{"key":"Price Adult","start":10,"end":100}]
   ```
 
-  **Body Parameters (JSON)**
+  **Query Parameters (JSON)**
   ```json
   {
     "module": "hotel",
