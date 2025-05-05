@@ -9,6 +9,7 @@ type DataItem = Record<string, any>;
 
 export async function get(req: Request, res: Response): Promise<ServiceResponse<{}>> {
   try {
+      // mengambil filter apa saja yang ada di dalam Query Request
     let { page = 1, perPage = 10, filters, searchFilters, rangedFilters, orderKey, orderRule, module } = req.query;
     const userId = req.user ? req.user.userId : null;
  
@@ -22,6 +23,7 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
       return INVALID_ID_SERVICE_RESPONSE
     }
  
+    // mengambil data dari database
     const where: any = { module }; 
     const [files, total] = await Promise.all([
       prisma.file.findMany({
@@ -31,7 +33,8 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
       }),
       prisma.file.count({ where }),
     ]);
- 
+
+    // Hanya mengambil dataFile dari setiap Record yang sebelumnya di ambil dari database
     let allDataFiles: DataItem[] = [];
     files.forEach(file => {
       if (Array.isArray(file.dataFile)) {
@@ -39,6 +42,7 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
       }
     });
  
+    // Menghapus duplikasi yang ada pada setiap dataFile agar mengurangi redundant
     const seen = new Set();
     allDataFiles = allDataFiles.filter(item => {
       const key = JSON.stringify(item); 
@@ -47,6 +51,7 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
       return true;
     });
 
+    // Menjalankan Fix Filter (Normal Filter), Contains Filter (searchFilters), Ranged Filter (rangedFilters)
     if (filters) {
       const parsedFilters = JSON.parse(filters as string);
       for (const key in parsedFilters) {
@@ -79,11 +84,13 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
       }
     }
 
-    if (orderKey && typeof orderKey === 'string') {
+    // Mengurutkan data sesuai dengan request yang tersedia, function ini membutuhkan orderRule dan orderKey
+    const key = Array.isArray(orderKey) ? orderKey[0] : orderKey;
+    if (key && typeof key === 'string') {
       const rule = orderRule === 'desc' ? -1 : 1;
       allDataFiles.sort((a, b) => {
-        const valA = (a as DataItem)?.[orderKey];
-        const valB = (b as DataItem)?.[orderKey];
+        const valA = (a as DataItem)?.[key];
+        const valB = (b as DataItem)?.[key];
         if (valA === undefined) return 1;
         if (valB === undefined) return -1;
         return (valA > valB ? 1 : valA < valB ? -1 : 0) * rule;
@@ -110,6 +117,7 @@ export async function get(req: Request, res: Response): Promise<ServiceResponse<
 
 export async function upload(req: Request, res: Response): Promise<ServiceResponse<{}>> {
     try {
+      // pengecekan "module" yang dimana di wajibkan untuk ada
       let { module } = req.query;
       if (Array.isArray(module)) module = module[0];
       
@@ -124,6 +132,7 @@ export async function upload(req: Request, res: Response): Promise<ServiceRespon
         return INVALID_ID_SERVICE_RESPONSE
       }
   
+      // Menyimpan dan membuat file Parent
       const newFile = await prisma.file.create({
         data: {
           filename: file.originalname,
@@ -152,10 +161,12 @@ export async function upload(req: Request, res: Response): Promise<ServiceRespon
 export async function mockProcessFile(fileId: number, filePath: string) {
   setTimeout(async () => {
     try {
+      // Mengambil data dari Excel lalu mengubah nya menjadi JSON
       const workbook = xlsx.readFile(filePath);
       const sheetName = workbook.SheetNames[0];
       const data: any[] = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
+      // Menyimpan dataFile kedalam data file parent, yang sudah di buat di atas  
       await prisma.file.update({
         where: { id: fileId },
         data: { 
@@ -164,6 +175,7 @@ export async function mockProcessFile(fileId: number, filePath: string) {
         },
       });
     } catch (err) {
+      // Mengubah status menjadi "Failed" jikalau terjadi kesalahan 
       await prisma.file.update({
         where: { id: fileId },
         data: { status: "failed" },

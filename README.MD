@@ -134,6 +134,12 @@ npm start -- --service=rest
   GET http://localhost:3010/file/get?module=HOTEL&rangedFilters=[{"key":"Price Adult","start":10,"end":100}]
   ```
 
+  #### Order By
+  To use order by, request must have *orderRule* and *orderKey*, *orderKey* is the key of the item you want order and *orderRule* is ascending or descending
+  ```
+  GET http://localhost:3010/file/get?module=HOTEL&orderRule=desc&orderKey=Item
+  ```
+
   **Query Parameters (JSON)**
   ```json
   {
@@ -150,6 +156,8 @@ npm start -- --service=rest
         "end": 100
       }
     },
+    "orderRule": "desc",
+    "orderKey": "Item",
     "page": 1,
     "perPage": 20
   }
